@@ -1,0 +1,103 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import linear_model, datasets
+import os
+import pandas as pd
+
+out=pd.read_csv('E:\\1.csv')
+out
+
+
+#reading the data from csv file
+X,y=out.iloc[:,0:-1],out.iloc[:,-1]
+
+X
+
+y.value_counts()
+
+
+#using numpy asarray
+X=np.asarray(X)
+y=np.asarray(y)
+
+
+#proprocessing the string s
+for i in range(0,4177):
+    if X[i][0]=='M':
+        X[i][0]=0
+    elif X[i][0]=='F':
+        X[i][0]=1
+    else :
+        X[i][0]=2
+
+print(X)
+
+
+#merging
+t=0
+for i in range(0,4177):
+    if y[i] in [1,2,25,26,29,24,27]:
+        y[i]=1
+    else :
+        t+=1
+
+#over sampling
+from imblearn.over_sampling import SMOTE 
+
+sm=SMOTE()
+X_res,y_res=sm.fit_sample(X,y)
+
+y_i=pd.Series(y_res)
+y_i.value_counts()
+
+
+#calculating the importance of each column
+from sklearn.ensemble import RandomForestClassifier
+clf = RandomForestClassifier()
+clf.fit(X_res,y_res)
+clf.feature_importances_
+
+#reading the data from 1st column
+X,y=out.iloc[:,1:-1],out.iloc[:,-1]
+
+#Again over-sampled
+sm=SMOTE()
+X_res1,y_res1=sm.fit_sample(X,y)
+
+#Training and testing
+from sklearn.cross_validation import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X_res1,y_res1, test_size=0.30, random_state=42)
+
+#One hyperplane fitting the target value
+from sklearn.metrics import accuracy_score
+reg = linear_model.LinearRegression()
+reg.fit(X_train,y_train)
+pred5=reg.predict(X_test)
+li=[]
+for i in range(0,len(pred5)):
+    li.append(round(pred5[i]))
+accuracy_score(y_test,li)
+
+#One vs all
+logreg = linear_model.LogisticRegression(C=1e5)
+
+logreg.fit(X_train,y_train)
+
+pred=logreg.predict(X_test)
+
+from sklearn.metrics import accuracy_score
+
+accuracy_score(y_test,pred)
+
+#now applying algorithm to increase the accuracy by RandomForestClassifier
+from sklearn.metrics import confusion_matrix
+
+
+print(confusion_matrix(y_test,pred))
+
+from sklearn.ensemble import RandomForestClassifier
+clf1 = RandomForestClassifier()
+clf1.fit(X_train,y_train)
+
+pred4=clf1.predict(X_test)
+accuracy_score(y_test,pred4)
